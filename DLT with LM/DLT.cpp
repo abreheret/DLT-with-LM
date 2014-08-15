@@ -8,7 +8,7 @@
 using namespace std;
 using namespace cv;
 #define points 63
-
+//#define Jacobian
 
 ifstream xin("pts1.txt");
 ifstream yin("pts2.txt");
@@ -21,6 +21,8 @@ double cost(double* h, vector<double>& x, vector<double>&y);
 void DLT(Mat A, Mat& H);
 void func(double *p, double *hx, int m, int n, void *adata);
 void est_hx(double *h, double *hx, double *y);
+
+void jacf(double *p, double *j, int m, int n, void *adata);
 int main()
 {
 	Mat img1, img2;
@@ -45,14 +47,53 @@ int main()
 	imshow("img1", img2);
 	imshow("img2", img3);
 	waitKey(0);
-//	double hx[126];
-//	func((double*)H.data, hx, 0, 126, NULL);
-	cout<<dlevmar_dif(func, (double*)H.data, NULL, 8, 63*2, 2000, NULL, NULL, NULL, NULL, NULL);
+	cout << H << endl;
+#ifdef Jacobian
+	cout << dlevmar_der(func, jacf, (double*)H.data, NULL, 9, 63 * 2, 2000, NULL, NULL, NULL, NULL, NULL) << endl;
+#else
+	cout << dlevmar_dif(func, (double*)H.data, NULL, 9, 63 * 2, 2000, NULL, NULL, NULL, NULL, NULL) << endl;
+#endif
 	warpPerspective(img1, img3, H, img1.size());
 	imshow("img3", img3);
-
+	cout << H << endl;
 	waitKey(0);
 
+}
+
+void jacf(double *p, double *j, int m, int n, void *adata)
+{
+	double x, y, u, v;
+	for (int i = 0; i < n; i++)
+	{
+		x = X[i / 2 * 3 + 0];
+		y = X[i / 2 * 3 + 1];
+		u = Y[i / 2 * 3 + 0];
+		v = Y[i / 2 * 3 + 1];
+		if (i % 2)
+		{
+			j[i * 9+1] = -x;
+			j[i * 9 + 3] = -y;
+			j[i * 9 + 5] = -1;
+			j[i * 9 + 7] = 0;
+			j[i * 9 + 9] = 0;
+			j[i * 9 + 11] = 0;
+			j[i * 9 + 13] = u*x;
+			j[i * 9 + 15] = u*y;
+			j[i * 9 + 17] = u;
+		}
+		else
+		{
+			j[i * 9] = 0;
+			j[i * 9 + 2] = 0;
+			j[i * 9 + 4] = 0;
+			j[i * 9 + 6] = -x;
+			j[i * 9 + 8] = -y;
+			j[i * 9 + 10] = -1;
+			j[i * 9 + 12] = v*x;
+			j[i * 9 + 14] = v*y;
+			j[i * 9 + 16] = v;
+		}
+	}
 }
 
 void func(double *p, double *hx, int m, int n, void *adata)
