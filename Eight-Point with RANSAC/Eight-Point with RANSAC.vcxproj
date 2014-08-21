@@ -119,11 +119,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ACTS.cpp" />
+    <ClCompile Include="..\Common\ACTS.cpp" />
+    <ClCompile Include="..\Common\Feature-Points.cpp" />
     <ClCompile Include="eight-points.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ACTS.h" />
+    <ClInclude Include="..\Common\ACTS.h" />
+    <ClInclude Include="..\Common\Feature-Points.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

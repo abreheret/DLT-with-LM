@@ -3,7 +3,8 @@
 #include <fstream>
 #include <time.h> 
 #include <levmar.h>
-#include "ACTS.h"
+#include "..\Common\ACTS.h"
+#include "..\Common\Feature-Points.h"
 
 using namespace cv;
 using namespace std;
@@ -16,7 +17,7 @@ int points;
 vector<double> X(points * 3);
 vector<double> Y(points * 3);
 Intrinsc_Parameters ip;
-vector<Feature_Point> fp;
+Feature_Points fp;
 
 void read_points();
 Mat eight_point(vector<int> nums);
@@ -29,8 +30,10 @@ void jacf(double *p, double *j, int m, int n, void *adata);
 
 int main()
 {
-
-	ReadACTS(fin, ip, fp,points);
+	int endframe;
+	int step;
+	int startframe;
+	ReadACTS(fin, ip, fp,points,startframe,step,endframe);
 
 //	read_points();
 	vector<int> nums(8);

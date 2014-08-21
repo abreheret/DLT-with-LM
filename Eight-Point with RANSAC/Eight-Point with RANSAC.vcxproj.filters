@@ -13,18 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{7badd5d0-647c-444e-95c8-ac67b348a4ca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="eight-points.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ACTS.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="..\Common\ACTS.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\Feature-Points.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ACTS.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="..\Common\ACTS.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Feature-Points.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

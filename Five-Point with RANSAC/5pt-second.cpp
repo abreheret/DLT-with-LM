@@ -339,6 +339,8 @@ Mat calibrate_points(Mat Q, double focal, Point2d pp)
 }
 
 
+
+
 Mat findEssentialMartix_RANSAC(Mat &_points1, Mat &_points2, double focal, Point2d pp, double thresh, double inlierratio, int iternum)
 {
 	//calibrate points with intrinsic parameters
@@ -605,4 +607,164 @@ Mat triangulation(Mat &P1, Mat&P2, Mat &points1, Mat &points2)
 
 	}
 	return X;
+}
+
+
+
+__inline void levmar_datagetP(Mat P1, Mat P2, double data[])
+{
+	for (int i = 0; i < 12; i++)
+		data[i] = P1.at<double>(i);
+	for (int i = 0; i < 12; i++)
+		data[i + 15] = P2.at<double>(i);
+}
+
+void func(double *p, double *hx, int m, int n, void *adata)
+{
+	hx[0] = 0;
+	hx[1] = 0;
+	hx[2] = 0;
+	double* data = (double*)adata;
+	for (int i = 0; i < 2; i++)
+	{
+		hx[0] += data[i * 15 + 0] * p[0] - data[i * 15 + 12] + p[1] * data[i * 15 + 1] + p[2] * data[i * 15 + 2] + p[3] * data[i * 15 + 3];
+		hx[1] += data[i * 15 + 4] * p[0] - data[i * 15 + 13] + p[1] * data[i * 15 + 5] + p[2] * data[i * 15 + 6] + p[3] * data[i * 15 + 6];
+		hx[2] += data[i * 15 + 8] * p[0] - data[i * 15 + 14] + p[1] * data[i * 15 + 9] + p[2] * data[i * 15 + 10] + p[3] * data[i * 15 + 11];
+	}
+
+}
+void refine_triangulation(Mat P1, Mat P2, Mat Q1, Mat Q2, Mat &X)
+{
+	int npoints = Q1.size().width;
+	X = X.t();
+	double data[30];
+	levmar_datagetP(P1, P2, data);
+	for (int i = 0; i < npoints; i++)
+	{
+		data[12] = Q1.at<double>(0, i);
+		data[13] = Q1.at<double>(1, i);
+		data[14] = 1;
+		data[12 + 15] = Q2.at<double>(0, i);
+		data[13 + 15] = Q2.at<double>(1, i);
+		data[14 + 15] = 1;
+		// comments are used for testing the optimal result
+		//		double hx[3];
+		//		func(&((double*)(X.data))[i * 4], hx, 3, 3, data);
+		//		for (int j = 0; j < 3; j++)
+		//			cout << hx[j] << " ";
+		//		cout << endl; 
+		dlevmar_dif(func, &((double*)(X.data))[i * 4], NULL, 3, 3, 1000, NULL, NULL, NULL, NULL, data);
+		//		func(&((double*)(X.data))[i * 4], hx, 3, 3, data);
+		//		for (int j = 0; j < 3; j++)
+		//			cout << hx[j] << " ";
+		//		cout << endl;
+
+	}
+	X = X.t();
+}
+
+void funcRt(double *p, double *hx, int m, int n, void *adata)
+{
+	static auto j = 0;
+	j++;
+	vector<Mat>* matrix = (vector<Mat>*)adata;
+	Mat R = (*matrix)[0];
+	Mat X1 = (*matrix)[1];
+
+	Mat X2 = (*matrix)[2];
+	int npoints = X1.size().height;
+	double *data = (double*)adata;
+	double r11, r12, r13, r21, r22, r23, r31, r32, r33;
+	double t1, t2, t3;
+	double k1, k2, theta;
+	t1 = p[0]; t2 = p[1]; t3 = p[2];
+	k1 = p[3]; k2 = p[4];  theta = p[5];
+	r11 = R.at<double>(0); r12 = R.at<double>(1); r13 = R.at<double>(2); r21 = R.at<double>(3); r22 = R.at<double>(4); r23 = R.at<double>(5); r31 = R.at<double>(6); r32 = R.at<double>(7); r33 = R.at<double>(8);
+	Mat T(3, 3, CV_64F);
+	T.at<double>(0) = r21*(t2*(k1*sin(theta) - k2*1*(cos(theta) - 1)) - t3*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*1*1 + 1)) + r31*(t3*(k1*sin(theta) + k2*1*(cos(theta) - 1)) + t2*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*k2*k2 + 1)) - r11*(t2*(k2*sin(theta) + k1*1*(cos(theta) - 1)) + t3*(1*sin(theta) - k1*k2*(cos(theta) - 1)));
+	T.at<double>(1) = r22*(t2*(k1*sin(theta) - k2*1*(cos(theta) - 1)) - t3*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*1*1 + 1)) + r32*(t3*(k1*sin(theta) + k2*1*(cos(theta) - 1)) + t2*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*k2*k2 + 1)) - r12*(t2*(k2*sin(theta) + k1*1*(cos(theta) - 1)) + t3*(1*sin(theta) - k1*k2*(cos(theta) - 1)));
+	T.at<double>(2) = r23*(t2*(k1*sin(theta) - k2*1*(cos(theta) - 1)) - t3*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*1*1 + 1)) + r33*(t3*(k1*sin(theta) + k2*1*(cos(theta) - 1)) + t2*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*k2*k2 + 1)) - r13*(t2*(k2*sin(theta) + k1*1*(cos(theta) - 1)) + t3*(1*sin(theta) - k1*k2*(cos(theta) - 1)));
+	T.at<double>(3) = r11*(t1*(k2*sin(theta) + k1*1*(cos(theta) - 1)) + t3*((cos(theta) - 1)*k2*k2 + (cos(theta) - 1)*1*1 + 1)) + r31*(t3*(k2*sin(theta) - k1*1*(cos(theta) - 1)) - t1*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*k2*k2 + 1)) - r21*(t1*(k1*sin(theta) - k2*1*(cos(theta) - 1)) + t3*(1*sin(theta) + k1*k2*(cos(theta) - 1)));
+	T.at<double>(4) = r12*(t1*(k2*sin(theta) + k1*1*(cos(theta) - 1)) + t3*((cos(theta) - 1)*k2*k2 + (cos(theta) - 1)*1*1 + 1)) + r32*(t3*(k2*sin(theta) - k1*1*(cos(theta) - 1)) - t1*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*k2*k2 + 1)) - r22*(t1*(k1*sin(theta) - k2*1*(cos(theta) - 1)) + t3*(1*sin(theta) + k1*k2*(cos(theta) - 1)));
+	T.at<double>(5) = r13*(t1*(k2*sin(theta) + k1*1*(cos(theta) - 1)) + t3*((cos(theta) - 1)*k2*k2 + (cos(theta) - 1)*1*1 + 1)) + r33*(t3*(k2*sin(theta) - k1*1*(cos(theta) - 1)) - t1*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*k2*k2 + 1)) - r23*(t1*(k1*sin(theta) - k2*1*(cos(theta) - 1)) + t3*(1*sin(theta) + k1*k2*(cos(theta) - 1)));
+	T.at<double>(6) = r11*(t1*(1*sin(theta) - k1*k2*(cos(theta) - 1)) - t2*((cos(theta) - 1)*k2*k2 + (cos(theta) - 1)*1*1 + 1)) + r21*(t2*(1*sin(theta) + k1*k2*(cos(theta) - 1)) + t1*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*1*1 + 1)) - r31*(t1*(k1*sin(theta) + k2*1*(cos(theta) - 1)) + t2*(k2*sin(theta) - k1*1*(cos(theta) - 1)));
+	T.at<double>(7) = r12*(t1*(1*sin(theta) - k1*k2*(cos(theta) - 1)) - t2*((cos(theta) - 1)*k2*k2 + (cos(theta) - 1)*1*1 + 1)) + r22*(t2*(1*sin(theta) + k1*k2*(cos(theta) - 1)) + t1*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*1*1 + 1)) - r32*(t1*(k1*sin(theta) + k2*1*(cos(theta) - 1)) + t2*(k2*sin(theta) - k1*1*(cos(theta) - 1)));
+	T.at<double>(8) = r13*(t1*(1*sin(theta) - k1*k2*(cos(theta) - 1)) - t2*((cos(theta) - 1)*k2*k2 + (cos(theta) - 1)*1*1 + 1)) + r23*(t2*(1*sin(theta) + k1*k2*(cos(theta) - 1)) + t1*((cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*1*1 + 1)) - r33*(t1*(k1*sin(theta) + k2*1*(cos(theta) - 1)) + t2*(k2*sin(theta) - k1*1*(cos(theta) - 1)));
+	Mat result;
+	for (int i = 0; i < npoints; i++)
+	{
+		result = X2.row(i)*T*X1.row(i).t() + X1.row(i)*T.t()*X2.row(i).t();
+		hx[i] = result.at<double>(0);
+	}
+
+}
+
+void refine_Rt(Mat &R, Mat &t, Mat X1, Mat X2)
+{
+	int npoints = X1.size().height;
+	vector<Mat> matrix(3);
+	matrix[0] = R;
+	matrix[1] = X1;
+	matrix[2] = X2;
+	double p[7];
+	p[0] = t.at<double>(0);
+	p[1] = t.at<double>(1);
+	p[2] = t.at<double>(2);
+	p[3] = 1;
+	p[4] = 1;
+	p[5] = 0;
+	cout << dlevmar_dif(funcRt, p, NULL, 6, npoints, 1000, NULL, NULL, NULL, NULL, &matrix);
+	t.at<double>(0) = p[0];
+	t.at<double>(1) = p[1];
+	t.at<double>(2) = p[2];
+
+	Mat dR(3, 3, CV_64F);
+	double k1, k2, theta;
+	k1 = p[3];
+	k2 = p[4];
+	theta = p[5];
+	dR.at<double>(0) = (cos(theta) - 1)*k2*k2 + (cos(theta) - 1)*1*1 + 1;
+	dR.at<double>(1) = -1*sin(theta) - k1*k2*(cos(theta) - 1);
+	dR.at<double>(2) = k2*sin(theta) - k1*1*(cos(theta) - 1);
+	dR.at<double>(3) = 1*sin(theta) - k1*k2*(cos(theta) - 1);
+	dR.at<double>(4) = (cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*1*1 + 1;
+	dR.at<double>(5) = -k1*sin(theta) - k2*1*(cos(theta) - 1);
+	dR.at<double>(6) = -k2*sin(theta) - k1*1*(cos(theta) - 1);
+	dR.at<double>(7) = k1*sin(theta) - k2*1*(cos(theta) - 1);
+	dR.at<double>(8) = (cos(theta) - 1)*k1*k1 + (cos(theta) - 1)*k2*k2 + 1;
+	R = dR*R;
+
+}
+
+
+Mat reprojected_error(Mat R, Mat t, Mat X1, Mat X2)
+{
+	int npoints = X1.size().height;
+	Mat tx = Mat::zeros(3, 3, CV_64F);
+	double t1 = t.at<double>(0);
+	double t2 = t.at<double>(1);
+	double t3 = t.at<double>(2);
+	tx.at<double>(0, 1) = -t3;
+	tx.at<double>(1, 0) = t3;
+	tx.at<double>(0, 2) = t2;
+	tx.at<double>(2, 0) = -t2;
+	tx.at<double>(1, 2) = -t1;
+	tx.at<double>(2, 1) = t1;
+	Mat error(npoints, 1, CV_64F);
+	for (int i = 0; i < npoints; i++)
+		error.row(i) = X2.row(i)*tx*R*X1.row(i).t() + X1.row(i)*((tx*R).t())*X2.row(i).t();
+	return error;
+
+}
+
+Mat reproject3D_error(Mat P1, Mat P2, Mat X1, Mat X2, Mat X)
+{
+	int npoints = X.size().width;
+	Mat error(npoints, 1, CV_64F);
+	for (int i = 0; i < npoints; i++)
+	{
+		error.at<double>(i) = norm(P1*X.col(i) - X1.row(i).t(), NORM_L2) + norm(P2*X.col(i) - X2.row(i).t(), NORM_L2);
+	}
+	return error;
+
 }

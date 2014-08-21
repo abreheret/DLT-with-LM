@@ -4,10 +4,13 @@
 #include <opencv2\core\core.hpp>
 #include <time.h>
 #include <opencv2\calib3d\calib3d.hpp>
+#include <fstream>
+#include <levmar.h>
+#include <iostream>
 
 
 using namespace cv;
-
+using namespace std;
 
 
 int runKernel(vector<double>, vector<double>, OutputArray);
@@ -21,4 +24,10 @@ int recoverPose(InputArray E, InputArray _points1, InputArray _points2, OutputAr
 void decomposeEssentialMat(InputArray _E, OutputArray _R1, OutputArray _R2, OutputArray _t);
 Mat triangulation(Mat &P1, Mat&P2, Mat&points1, Mat &points2);
 Mat calibrate_points(Mat Q, double focal, Point2d pp);
+void WriteACTS(ifstream &fin, ofstream& fout, Mat X);
+void refine_triangulation(Mat P1, Mat P2, Mat Q1, Mat Q2, Mat &X);
+void refine_Rt(Mat &R, Mat &t, Mat X1, Mat X2);
+Mat reprojected_error(Mat R, Mat t, Mat X1, Mat X2);
+Mat reproject3D_error(Mat P1, Mat P2, Mat X1, Mat X2, Mat X);
+
 #endif

@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{36A6EFD6-68F0-4A62-A677-068CDCFF0AC3}</ProjectGuid>
-    <RootNamespace>FivePointwithRANSAC</RootNamespace>
+    <ProjectGuid>{F68A5B7C-FB0B-458B-A25C-F46D9BFB98D6}</ProjectGuid>
+    <RootNamespace>MultiViewConstruction</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -117,15 +117,15 @@
   <ItemGroup>
     <ClCompile Include="..\Common\ACTS.cpp" />
     <ClCompile Include="..\Common\Feature-Points.cpp" />
-    <ClCompile Include="5pt-second.cpp" />
-    <ClCompile Include="5pts.cpp" />
+    <ClCompile Include="..\Five-Point with RANSAC\5pt-second.cpp" />
+    <ClCompile Include="KeyFrames.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\ACTS.h" />
     <ClInclude Include="..\Common\Feature-Points.h" />
-    <ClInclude Include="5pt-second.h" />
-    <ClInclude Include="5pts.h" />
+    <ClInclude Include="..\Five-Point with RANSAC\5pt-second.h" />
+    <ClInclude Include="keyframes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

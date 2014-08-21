@@ -14,17 +14,14 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="Common">
-      <UniqueIdentifier>{37f8a54f-971b-4421-8421-e309e0826a11}</UniqueIdentifier>
+      <UniqueIdentifier>{d55003f4-5913-4030-85a3-c55ffa16f961}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="5pts.cpp">
+    <ClCompile Include="KeyFrames.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="5pt-second.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\Common\ACTS.cpp">
@@ -33,18 +30,21 @@
     <ClCompile Include="..\Common\Feature-Points.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="..\Five-Point with RANSAC\5pt-second.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="5pts.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="5pt-second.h">
+    <ClInclude Include="keyframes.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\Common\ACTS.h">
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="..\Common\Feature-Points.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Five-Point with RANSAC\5pt-second.h">
       <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
