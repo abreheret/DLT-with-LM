@@ -603,8 +603,9 @@ Mat triangulation(Mat &P1, Mat&P2, Mat &points1, Mat &points2)
 		SVD svd;
 		svd.solveZ(A, x);
 		for (int j = 0; j < 4; j++)
-			X.at<double>(j, i) = x.at<double>(j, 0);
-
+		{
+			X.at<double>(j, i) = x.at<double>(j, 0)/x.at<double>(3,0);
+		}
 	}
 	return X;
 }
@@ -713,7 +714,7 @@ void refine_Rt(Mat &R, Mat &t, Mat X1, Mat X2)
 	p[3] = 1;
 	p[4] = 1;
 	p[5] = 0;
-	cout << dlevmar_dif(funcRt, p, NULL, 6, npoints, 1000, NULL, NULL, NULL, NULL, &matrix);
+	dlevmar_dif(funcRt, p, NULL, 6, npoints, 1000, NULL, NULL, NULL, NULL, &matrix);
 	t.at<double>(0) = p[0];
 	t.at<double>(1) = p[1];
 	t.at<double>(2) = p[2];

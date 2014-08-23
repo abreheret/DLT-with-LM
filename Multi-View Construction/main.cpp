@@ -32,19 +32,21 @@ int main()
 	vector<int> newaddedpoints;
 	vector<Mat> IntrinscMatrix, distCoeffs;
 	Mat Intrinc = Mat::eye(3, 3, CV_64F);
+
+	Mat zero = Mat(5, 1, CV_64FC1, cv::Scalar::all(0));
+	distCoeffs.push_back(zero);
+	ReadACTS(actin, ip, fp, npoints, startframe, endframe, step);
 	Intrinc.at<double>(0) = ip.fx;
 	Intrinc.at<double>(4) = ip.fy;
 	Intrinc.at<double>(2) = ip.cx;
 	Intrinc.at<double>(5) = ip.cy;
 	IntrinscMatrix.push_back(Intrinc);
-	Mat zero = Mat(5, 1, CV_64FC1, cv::Scalar::all(0));
-	distCoeffs.push_back(zero);
-	ReadACTS(actin, ip, fp, npoints, startframe, endframe, step);
-
 	startframe = 0; endframe = 200;
 	getkeyframes(fp, startframe, 100, endframe, keyframes, npoints);
+	cout << "keyframes:" << endl;
 	for (auto i : keyframes)
 		cout << i << " ";
+	cout << endl;
 	vector<int> matchpoints;
 
 	vector<Mat> Rs(keyframes.size());
@@ -57,6 +59,7 @@ int main()
 	ts.push_back(Mat::zeros(3, 1, CV_64F));
 	for (int frame = 1; frame < keyframes.size(); frame++)
 	{
+		cout << "frames:" << frame + 1 << '\t';
 		newaddedpoints.clear();
 		for (int i = 0; i < npoints; i++)
 		{
@@ -79,14 +82,23 @@ int main()
 			Q2.at<double>(i, 0) = fp[matchpoints[i]].get_point(keyframes[1]).x;
 			Q2.at<double>(i, 1) = fp[matchpoints[i]].get_point(keyframes[1]).y;
 		}
+
+		cout << "points:" << currentpointsindex.size() << endl;
+
 		Mat EM;//essential matrix
-		EM = findEssentialMartix_RANSAC(Q1, Q2, ip.fx, Point2d(ip.cx, ip.cy), 0.1, 0.5, 1000);
+		cout << "computing EM"<<'\t';
+		EM = findEssentialMartix_RANSAC(Q1, Q2, ip.fx, Point2d(ip.cx, ip.cy), 0.1, 0.5, 100);
+		
 		Mat R, t, _mask;//Rotation matrix and translation matrix
+		cout << "computing R and t" << '\t';
 		recoverPose(EM, Q1, Q2, R, t, ip.fx, Point2d(ip.cx, ip.cy), _mask);
+
 		//optimize the P=(R|t) using the X
 		Mat Q1h = calibrate_points_homography(Q1, ip.fx, Point2d(ip.cx, ip.cy));
 		Mat Q2h = calibrate_points_homography(Q2, ip.fx, Point2d(ip.cx, ip.cy));
+		cout << "refine the Rt"<<'\t';
 		refine_Rt(R, t, Q1h, Q2h);
+
 		//construct the camera matrix
 		Mat P1 (3,4,CV_64F), P2(3, 4, CV_64F);
 		Mat R1 = Rs[Rs.size() - 1]; Mat t1 = ts[ts.size() - 1];
@@ -101,8 +113,7 @@ int main()
 		Rs.push_back(R2);
 		Mat t2 = t1 + t;
 		ts.push_back(t2);
-		cout << t << endl;
-		cout << R << endl;
+
 		for (int i = 0; i < 3; i++)
 		{
 			for (int j = 0; j < 3; j++)
@@ -110,8 +121,7 @@ int main()
 		}
 		for (int i = 0; i < 3; i++)
 			P2.at<double>(i, 3) = t2.at<double>(i, 0);
-		cout << P1 << endl;
-		cout << P2 << endl;
+
 		Mat X;
 		//calibrate correspondences with focal and principal point
 		Mat Q1c = calibrate_points(Q1, ip.fx, Point2d(ip.cx, ip.cy));
@@ -123,8 +133,8 @@ int main()
 		X = triangulation(P1, P2, Q1c, Q2c);
 
 		//optimize the X using the P above
+		cout << "refine X";
 		refineXfromC(X, P1,P2, newaddedpoints, Q1h,Q2h);
-
 
 
 		for (int i = 0; i < newaddedpoints.size(); i++)
@@ -177,9 +187,11 @@ int main()
 		IntrinscMatrix.push_back(Intrinc);
 
 		distCoeffs.push_back(zero);
-
+		int ncon = currentpointsindex.size() - newaddedpoints.size();
+		int mcon = frame;
 		cvsba::Sba sba;
-		sba.run(currentpoints3D, currentpoints2D, visiability, IntrinscMatrix, Rs, ts, distCoeffs);
+		cout << "sba!";
+		sba.run(currentpoints3D, currentpoints2D, visiability, IntrinscMatrix, Rs, ts, distCoeffs,mcon,ncon);
 		std::cout << "Initial error=" << sba.getInitialReprjError() << ". Final error=" << sba.getFinalReprjError() << std::endl;
 	}
 	////construct vmask for bundle adjustment
